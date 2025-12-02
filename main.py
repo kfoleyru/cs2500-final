@@ -1,18 +1,26 @@
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, Response, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette import status
-import uuid  # Used for generating unique IDs for posts
+import uuid
+from typing import Optional
 from database.db import (
     get_lost_posts,
     get_found_posts,
+    get_lost_post,
+    get_found_post,
     add_lost_post,
     delete_lost_post,
     add_found_post,
     delete_found_post,
     add_user,
-    get_all_users,  # Added to check if any user exists
+    verify_login,
+    get_user_by_id,
+    claim_item,
+    get_all_unresolved_matches,
+    get_matches_by_user,
+    admin_resolve_match,
 )
 
 # --- FastAPI Setup ---
@@ -21,61 +29,59 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # --- Application Constants ---
-# In a real application, you'd use a session/cookie to manage the logged-in user.
-# For this demo, we'll simulate a logged-in user (u900) for posting/deleting,
-# but the registration route is fully functional.
-MOCK_USER_ID = "u900"
-MOCK_USER_NAME = "Demo User"
-
-# Valid categories from your CreateLAF.py
 VALID_CATEGORIES = [
     'Electronics', 'Clothing', 'Accessories',
     'Documents', 'Keys', 'Books', 'Other'
 ]
 
 
-# --- Initial Setup (Ensuring Mock User and Data) ---
-def ensure_mock_user():
-    """Checks if the mock user exists and adds them if not."""
-    if not get_all_users():  # If no users exist, ensure the mock user is available
-        success, message = add_user(MOCK_USER_ID, MOCK_USER_NAME, "demo@uvm.edu", "555-1234", "student")
-        if not success and "already exists" not in message:
-            print(f"Failed to ensure mock user exists: {message}")
+# Simple session helper (using cookies)
+def get_current_user(user_id: Optional[str] = Cookie(None)):
+    """Get current logged in user from cookie"""
+    if not user_id:
+        return None
+    return get_user_by_id(user_id)
 
 
-ensure_mock_user()
+# --- Authentication Routes ---
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_form(request: Request):
+    """Display login form"""
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
 
 
-# --- Routes ---
+@app.post("/login", response_class=HTMLResponse)
+async def login(
+        request: Request,
+        user_id: str = Form(...),
+        password: str = Form(...)
+):
+    """Handle login submission"""
+    user = verify_login(user_id, password)
 
-## 🌎 Homepage Route
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    """Displays the homepage with lists of all Lost and Found posts."""
-    lost_posts = get_lost_posts()
-    found_posts = get_found_posts()
-
-    # Sort posts by date posted (newest first)
-    lost_posts.sort(key=lambda x: x['date_posted'], reverse=True)
-    found_posts.sort(key=lambda x: x['date_posted'], reverse=True)
-
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "lost_posts": lost_posts,
-            "found_posts": found_posts,
-            "user_id": MOCK_USER_ID,  # Pass the current user ID for delete permissions
-            "user_name": MOCK_USER_NAME
-        }
-    )
+    if user:
+        response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+        response.set_cookie(key="user_id", value=user_id, httponly=True)
+        return response
+    else:
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "Invalid credentials. Please try again."}
+        )
 
 
-# --- 👤 Registration Routes ---
+@app.get("/logout")
+async def logout():
+    """Log out the user"""
+    response = RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+    response.delete_cookie(key="user_id")
+    return response
+
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_form(request: Request):
-    """Displays the form to create a new user account."""
+    """Display registration form"""
     return templates.TemplateResponse("register.html", {"request": request, "error": None})
 
 
@@ -85,40 +91,69 @@ async def create_account(
         user_id: str = Form(...),
         name: str = Form(...),
         email: str = Form(...),
+        password: str = Form(...),
         phone: str = Form(None),
-        role: str = Form("student")  # Default role
+        role: str = Form("student")
 ):
-    """Handles the form submission to create a new user account."""
-    success, message = add_user(user_id, name, email, phone, role)
+    """Handle registration submission"""
+    success, message = add_user(user_id, name, email, password, phone, role)
 
     if success:
-        # Success message, then redirect to home
-        return templates.TemplateResponse(
-            "index.html",
-            {
-                "request": request,
-                "message": f"Account created successfully for {name}! You can now post.",
-                "user_id": user_id,
-                "user_name": name,
-                "lost_posts": get_lost_posts(),
-                "found_posts": get_found_posts(),
-            }
-        )
+        response = RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+        return response
     else:
-        # Display the error message back on the registration form
         return templates.TemplateResponse(
             "register.html",
             {"request": request, "error": f"Registration Failed: {message}"}
         )
 
 
-# --- 🔎 Lost Post Routes ---
+# --- Homepage Route ---
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request, user_id: Optional[str] = Cookie(None)):
+    """Display homepage with all posts"""
+    current_user = get_current_user(user_id)
+
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    lost_posts = [p for p in get_lost_posts() if p['status'] == 'open']
+    found_posts = [p for p in get_found_posts() if p['status'] == 'available']
+
+    lost_posts.sort(key=lambda x: x['date_posted'], reverse=True)
+    found_posts.sort(key=lambda x: x['date_posted'], reverse=True)
+
+    return templates.TemplateResponse(
+        "home.html",
+        {
+            "request": request,
+            "lost_posts": lost_posts,
+            "found_posts": found_posts,
+            "user_id": current_user['user_id'],
+            "user_name": current_user['name'],
+            "user_role": current_user['role']
+        }
+    )
+
+
+# --- Lost Post Routes ---
 
 @app.get("/add-lost", response_class=HTMLResponse)
-async def add_lost_post_form(request: Request):
+async def add_lost_post_form(request: Request, user_id: Optional[str] = Cookie(None)):
+    current_user = get_current_user(user_id)
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
     return templates.TemplateResponse(
         "add_lost.html",
-        {"request": request, "categories": VALID_CATEGORIES, "user_id": MOCK_USER_ID}
+        {
+            "request": request,
+            "categories": VALID_CATEGORIES,
+            "user_id": current_user['user_id'],
+            "user_name": current_user['name'],
+            "user_role": current_user['role']
+        }
     )
 
 
@@ -129,14 +164,19 @@ async def create_lost_post(
         category: str = Form(...),
         description: str = Form(...),
         date_lost: str = Form(...),
-        last_seen_location: str = Form(...)
+        last_seen_location: str = Form(...),
+        user_id: Optional[str] = Cookie(None)
 ):
+    current_user = get_current_user(user_id)
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
     new_id = "lost" + str(uuid.uuid4().hex[:8])
 
     try:
         add_lost_post(
             lost_id=new_id,
-            user_id=MOCK_USER_ID,
+            user_id=current_user['user_id'],
             item_name=item_name,
             category=category,
             description=description,
@@ -147,23 +187,80 @@ async def create_lost_post(
     except Exception as e:
         return templates.TemplateResponse(
             "add_lost.html",
-            {"request": request, "error": f"Database error: {e}", "categories": VALID_CATEGORIES}
+            {
+                "request": request,
+                "error": f"Database error: {e}",
+                "categories": VALID_CATEGORIES,
+                "user_id": current_user['user_id'],
+                "user_name": current_user['name'],
+                "user_role": current_user['role']
+            }
         )
 
 
+@app.get("/lost/{lost_id}", response_class=HTMLResponse)
+async def view_lost_post(request: Request, lost_id: str, user_id: Optional[str] = Cookie(None)):
+    """Display detailed view of a lost post"""
+    current_user = get_current_user(user_id)
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    post = get_lost_post(lost_id)
+    if not post:
+        return templates.TemplateResponse(
+            "error.html",
+            {
+                "request": request,
+                "error": "Lost post not found",
+                "user_id": current_user['user_id'],
+                "user_name": current_user['name'],
+                "user_role": current_user['role']
+            }
+        )
+
+    # Get available found posts for matching
+    found_posts = [p for p in get_found_posts() if p['status'] == 'available']
+
+    return templates.TemplateResponse(
+        "lost_detail.html",
+        {
+            "request": request,
+            "post": post,
+            "found_posts": found_posts,
+            "user_id": current_user['user_id'],
+            "user_name": current_user['name'],
+            "user_role": current_user['role']
+        }
+    )
+
+
 @app.post("/delete-lost/{lost_id}", response_class=HTMLResponse)
-async def remove_lost_post(request: Request, lost_id: str):
+async def remove_lost_post(request: Request, lost_id: str, user_id: Optional[str] = Cookie(None)):
+    current_user = get_current_user(user_id)
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
     delete_lost_post(lost_id)
     return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
 
-# --- 🤝 Found Post Routes ---
+# --- Found Post Routes ---
 
 @app.get("/add-found", response_class=HTMLResponse)
-async def add_found_post_form(request: Request):
+async def add_found_post_form(request: Request, user_id: Optional[str] = Cookie(None)):
+    current_user = get_current_user(user_id)
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
     return templates.TemplateResponse(
         "add_found.html",
-        {"request": request, "categories": VALID_CATEGORIES, "user_id": MOCK_USER_ID}
+        {
+            "request": request,
+            "categories": VALID_CATEGORIES,
+            "user_id": current_user['user_id'],
+            "user_name": current_user['name'],
+            "user_role": current_user['role']
+        }
     )
 
 
@@ -175,14 +272,19 @@ async def create_found_post(
         description: str = Form(...),
         date_found: str = Form(...),
         found_location: str = Form(...),
-        storage_location: str = Form("Campus Security Office")
+        storage_location: str = Form("Campus Security Office"),
+        user_id: Optional[str] = Cookie(None)
 ):
+    current_user = get_current_user(user_id)
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
     new_id = "found" + str(uuid.uuid4().hex[:8])
 
     try:
         add_found_post(
             found_id=new_id,
-            user_id=MOCK_USER_ID,
+            user_id=current_user['user_id'],
             item_name=item_name,
             category=category,
             description=description,
@@ -194,11 +296,138 @@ async def create_found_post(
     except Exception as e:
         return templates.TemplateResponse(
             "add_found.html",
-            {"request": request, "error": f"Database error: {e}", "categories": VALID_CATEGORIES}
+            {
+                "request": request,
+                "error": f"Database error: {e}",
+                "categories": VALID_CATEGORIES,
+                "user_id": current_user['user_id'],
+                "user_name": current_user['name'],
+                "user_role": current_user['role']
+            }
         )
 
 
+@app.get("/found/{found_id}", response_class=HTMLResponse)
+async def view_found_post(request: Request, found_id: str, user_id: Optional[str] = Cookie(None)):
+    """Display detailed view of a found post"""
+    current_user = get_current_user(user_id)
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    post = get_found_post(found_id)
+    if not post:
+        return templates.TemplateResponse(
+            "error.html",
+            {
+                "request": request,
+                "error": "Found post not found",
+                "user_id": current_user['user_id'],
+                "user_name": current_user['name'],
+                "user_role": current_user['role']
+            }
+        )
+
+    # Get available lost posts for matching
+    lost_posts = [p for p in get_lost_posts() if p['status'] == 'open']
+
+    return templates.TemplateResponse(
+        "found_detail.html",
+        {
+            "request": request,
+            "post": post,
+            "lost_posts": lost_posts,
+            "user_id": current_user['user_id'],
+            "user_name": current_user['name'],
+            "user_role": current_user['role']
+        }
+    )
+
+
 @app.post("/delete-found/{found_id}", response_class=HTMLResponse)
-async def remove_found_post(request: Request, found_id: str):
+async def remove_found_post(request: Request, found_id: str, user_id: Optional[str] = Cookie(None)):
+    current_user = get_current_user(user_id)
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
     delete_found_post(found_id)
     return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+
+
+# --- Matching Routes ---
+
+@app.post("/claim", response_class=HTMLResponse)
+async def claim_post(
+        request: Request,
+        lost_id: str = Form(...),
+        found_id: str = Form(...),
+        notes: str = Form(""),
+        user_id: Optional[str] = Cookie(None)
+):
+    """Handle item claim/match creation"""
+    current_user = get_current_user(user_id)
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    success, message = claim_item(lost_id, found_id, current_user['user_id'], notes)
+
+    if success:
+        return RedirectResponse("/matches", status_code=status.HTTP_303_SEE_OTHER)
+    else:
+        # Return to previous page with error
+        return templates.TemplateResponse(
+            "error.html",
+            {
+                "request": request,
+                "error": message,
+                "user_id": current_user['user_id'],
+                "user_name": current_user['name'],
+                "user_role": current_user['role']
+            }
+        )
+
+
+@app.get("/matches", response_class=HTMLResponse)
+async def view_matches(request: Request, user_id: Optional[str] = Cookie(None)):
+    """Display matches relevant to the user"""
+    current_user = get_current_user(user_id)
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    if current_user['role'] == 'admin':
+        matches = get_all_unresolved_matches()
+    else:
+        matches = get_matches_by_user(current_user['user_id'])
+
+    return templates.TemplateResponse(
+        "matches.html",
+        {
+            "request": request,
+            "matches": matches,
+            "user_id": current_user['user_id'],
+            "user_name": current_user['name'],
+            "user_role": current_user['role']
+        }
+    )
+
+
+@app.post("/admin/resolve/{match_id}", response_class=HTMLResponse)
+async def resolve_match(request: Request, match_id: int, user_id: Optional[str] = Cookie(None)):
+    """Admin route to resolve a match"""
+    current_user = get_current_user(user_id)
+    if not current_user:
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    if current_user['role'] != 'admin':
+        return templates.TemplateResponse(
+            "error.html",
+            {
+                "request": request,
+                "error": "Unauthorized: Admin access required",
+                "user_id": current_user['user_id'],
+                "user_name": current_user['name'],
+                "user_role": current_user['role']
+            }
+        )
+
+    success, message = admin_resolve_match(match_id)
+    return RedirectResponse("/matches", status_code=status.HTTP_303_SEE_OTHER)
