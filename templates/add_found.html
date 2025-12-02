@@ -1,35 +1,60 @@
-<!-- templates/add_found.html -->
 {% extends "layout.html" %}
 
 {% block content %}
-    <h2>Report a Found Item ✨</h2>
-    {% if error %}
-        <p class="error">{{ error }}</p>
-    {% endif %}
-    <form class="post-form" action="/add-found" method="post">
-        <label for="item_name">Item Name:</label>
-        <input type="text" id="item_name" name="item_name" required>
-
-        <label for="category">Category:</label>
-        <select id="category" name="category" required>
-            <option value="">-- Select a Category --</option>
-            {% for cat in categories %}
-                <option value="{{ cat }}">{{ cat }}</option>
-            {% endfor %}
-        </select>
-
-        <label for="description">Description (Color, Brand, etc.):</label>
-        <textarea id="description" name="description" rows="3" required></textarea>
-
-        <label for="date_found">Date Found:</label>
-        <input type="date" id="date_found" name="date_found" required>
-
-        <label for="found_location">Found Location:</label>
-        <input type="text" id="found_location" name="found_location" required>
-
-        <label for="storage_location">Storage Location (default is Campus Security Office):</label>
-        <input type="text" id="storage_location" name="storage_location" value="Campus Security Office">
-
-        <input type="submit" value="Submit Found Report">
-    </form>
+    <div style="max-width: 700px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="color: #28a745; font-size: 2.2em;">✨ Report a Found Item</h2>
+            <p style="color: #666; font-size: 1.1em;">Help reunite items with their owners</p>
+        </div>
+        
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+        
+        <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 6px solid #28a745;">
+            <form class="post-form" action="/add-found" method="post">
+                <label for="item_name">Item Name *</label>
+                <input type="text" id="item_name" name="item_name" required placeholder="e.g., Black Wallet, Laptop, Set of Keys">
+                
+                <label for="category">Category *</label>
+                <select id="category" name="category" required>
+                    <option value="">-- Select a Category --</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+                
+                <label for="description">Description *</label>
+                <textarea id="description" name="description" rows="4" required placeholder="Describe the item: color, brand, condition, any identifying features"></textarea>
+                <p style="font-size: 0.85em; color: #666; margin-top: -5px; margin-bottom: 15px;">Include details that would help the owner identify it</p>
+                
+                <label for="date_found">Date Found *</label>
+                <input type="date" id="date_found" name="date_found" required>
+                
+                <label for="found_location">Found Location *</label>
+                <input type="text" id="found_location" name="found_location" required placeholder="e.g., Library Lobby, Outside Waterman Hall, Bus Stop">
+                
+                <label for="storage_location">Current Storage Location</label>
+                <input type="text" id="storage_location" name="storage_location" value="Campus Security Office" placeholder="Where the item is currently stored">
+                <p style="font-size: 0.85em; color: #666; margin-top: -5px; margin-bottom: 15px;">Default: Campus Security Office</p>
+                
+                <div style="margin-top: 20px; display: flex; gap: 15px;">
+                    <input type="submit" value="Submit Found Report" style="flex: 1;">
+                    <a href="/" style="background-color: #6c757d; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; text-align: center; flex: 1; display: flex; align-items: center; justify-content: center;">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+        
+        <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 20px; border-radius: 8px; margin-top: 20px;">
+            <h4 style="margin-top: 0; color: #0c5460;">📋 What Happens Next:</h4>
+            <ol style="color: #0c5460; line-height: 1.8;">
+                <li>Your found item report will be posted to the dashboard</li>
+                <li>Students who lost items can match their posts with yours</li>
+                <li>You'll be notified when a match is created</li>
+                <li>Campus Security will coordinate the item return</li>
+            </ol>
+        </div>
+    </div>
 {% endblock %}

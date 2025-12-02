@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - UVM Lost & Found</title>
+    <title>Login - UVM Lost & Found</title>
     <style>
         :root {
             --uvm-green: #004b34;
@@ -11,123 +11,128 @@
             --light-bg: #f5f5f5;
             --white: #ffffff;
         }
-        body {
-            font-family: 'Arial', sans-serif;
+        * {
             margin: 0;
             padding: 0;
-            background-color: var(--light-bg);
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, var(--uvm-green) 0%, #006644 100%);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 20px;
         }
-        .register-container {
+        .login-container {
             background-color: var(--white);
             padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            max-width: 450px;
             width: 100%;
         }
-        h1 {
-            color: var(--uvm-green);
+        .logo {
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .logo h1 {
+            color: var(--uvm-green);
+            font-size: 2.5em;
+            margin-bottom: 5px;
         }
         .subtitle {
             text-align: center;
             color: #666;
             margin-bottom: 30px;
+            font-size: 1.1em;
         }
         .error {
             background-color: #fdd;
             color: #dc3545;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #dc3545;
-            border-radius: 4px;
-            margin-bottom: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            text-align: center;
         }
         form {
             display: flex;
             flex-direction: column;
         }
         label {
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             color: #333;
             font-weight: bold;
+            font-size: 0.95em;
         }
-        input, select {
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
+        input {
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--uvm-green);
         }
         input[type="submit"] {
             background-color: var(--uvm-green);
             color: var(--white);
             border: none;
             cursor: pointer;
-            padding: 12px;
+            padding: 14px;
             font-size: 16px;
             font-weight: bold;
+            margin-top: 10px;
+            transition: background-color 0.3s;
         }
         input[type="submit"]:hover {
             background-color: #006644;
         }
-        .login-link {
+        .register-link {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #eee;
             color: #666;
         }
-        .login-link a {
+        .register-link a {
             color: var(--uvm-green);
             text-decoration: none;
             font-weight: bold;
         }
-        .login-link a:hover {
+        .register-link a:hover {
             text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="register-container">
-        <h1>🐈 Create UVM Account</h1>
-        <p class="subtitle">Join the Lost & Found community</p>
+    <div class="login-container">
+        <div class="logo">
+            <h1>🐈 UVM</h1>
+        </div>
+        <p class="subtitle">Lost & Found Portal</p>
 
         {% if error %}
             <div class="error">{{ error }}</div>
         {% endif %}
 
-        <form action="/register" method="post">
-            <label for="user_id">User ID (e.g., NetID or CatamountID):</label>
-            <input type="text" id="user_id" name="user_id" required placeholder="e.g., u1234567">
+        <form action="/login" method="post">
+            <label for="user_id">User ID</label>
+            <input type="text" id="user_id" name="user_id" required placeholder="Enter your User ID" autofocus>
 
-            <label for="name">Full Name:</label>
-            <input type="text" id="name" name="name" required placeholder="Your full name">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required placeholder="Enter your password">
 
-            <label for="email">UVM Email:</label>
-            <input type="email" id="email" name="email" required placeholder="example@uvm.edu">
-
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required placeholder="Choose a secure password">
-
-            <label for="phone">Phone (Optional):</label>
-            <input type="tel" id="phone" name="phone" placeholder="555-123-4567">
-
-            <label for="role">Role:</label>
-            <select id="role" name="role">
-                <option value="student">Student</option>
-                <option value="staff">Staff</option>
-                <option value="admin">Admin</option>
-            </select>
-
-            <input type="submit" value="Create Account">
+            <input type="submit" value="Sign In">
         </form>
 
-        <div class="login-link">
-            Already have an account? <a href="/login">Sign in here</a>
+        <div class="register-link">
+            Don't have an account? <a href="/register">Create one here</a>
         </div>
     </div>
 </body>
