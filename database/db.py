@@ -244,7 +244,7 @@ def admin_resolve_match(match_id: int):
         conn.close()
 
 
-print("Database module loaded with error handling + admin tools.")
+print("Database module loaded with error handling + admin tools. (This is in the dat db.py file)")
 
 
 

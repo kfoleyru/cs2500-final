@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette import status
 import uuid  # Used for generating unique IDs for lost/found posts
-from db import (
+from database.db import (
     get_lost_posts,
     get_found_posts,
     add_lost_post,
@@ -26,10 +26,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # --- Helper Functions (Mocking User and Data for Demo) ---
-
+"""
 # Mock a user ID since posts require one.
 # You would replace this with actual authentication logic.
-MOCK_USER_ID = "u900"
+MOCK_USER_ID = "u001"
 
 # Ensure the mock user exists for Foreign Key constraints
 # In a real app, this would happen during user registration/login.
@@ -42,10 +42,9 @@ VALID_CATEGORIES = [
     'Electronics', 'Clothing', 'Accessories',
     'Documents', 'Keys', 'Books', 'Other'
 ]
-
+"""
 
 # --- Routes ---
-
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """
