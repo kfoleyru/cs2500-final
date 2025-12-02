@@ -11,7 +11,7 @@ from database.db import (
     delete_lost_post,
     add_found_post,
     delete_found_post,
-    add_user,
+    add_user, # i need this to mock a user
 )
 
 # --- FastAPI Setup ---
@@ -26,7 +26,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # --- Helper Functions (Mocking User and Data for Demo) ---
-"""
+
 # Mock a user ID since posts require one.
 # You would replace this with actual authentication logic.
 MOCK_USER_ID = "u001"
@@ -42,7 +42,7 @@ VALID_CATEGORIES = [
     'Electronics', 'Clothing', 'Accessories',
     'Documents', 'Keys', 'Books', 'Other'
 ]
-"""
+
 
 # --- Routes ---
 @app.get("/", response_class=HTMLResponse)
