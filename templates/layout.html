@@ -3,56 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UVM Lost & Found Portal 💚</title>
+    <title>Register - UVM Lost & Found</title>
     <style>
-        /* New UVM-inspired colors and cleaner layout */
-        :root {
-            --uvm-green: #004b34; /* Dark UVM Green */
-            --uvm-gold: #ffc72c; /* UVM Gold/Yellow */
-            --light-bg: #f5f5f5;
-            --white: #ffffff;
-            --red-alert: #dc3545;
-            --green-success: #28a745;
-        }
-        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background-color: var(--light-bg); color: #333; }
-        header { background-color: var(--uvm-green); color: var(--white); padding: 1.5em; text-align: center; }
-        header h1 { margin: 0; font-size: 2.5em; }
-        nav { background-color: #333; padding: 0.75em 0; }
-        nav a { color: var(--white); margin: 0 1em; text-decoration: none; padding: 0.5em 1em; border-radius: 4px; transition: background-color 0.2s; }
-        nav a:hover { background-color: var(--uvm-gold); color: var(--uvm-green); }
-        .container { width: 90%; max-width: 1200px; margin: 3em auto; }
-        .post-list { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; } /* Use grid for better list layout */
-        .post-card { background-color: var(--white); border: 1px solid #ddd; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .post-card h3 { margin-top: 0; color: var(--uvm-green); border-bottom: 2px solid var(--uvm-gold); padding-bottom: 5px; }
-        .lost-card { border-left: 8px solid var(--red-alert); }
-        .found-card { border-left: 8px solid var(--green-success); }
-        .status-open { color: var(--red-alert); font-weight: bold; }
-        .status-available { color: var(--green-success); font-weight: bold; }
-        .status-matched, .status-closed, .status-returned { color: var(--uvm-gold); }
-        .delete-btn { background: none; border: none; color: var(--red-alert); cursor: pointer; padding: 0; font-size: 0.9em; margin-left: 10px; }
-        .post-form label, .post-form input, .post-form select, .post-form textarea { display: block; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
-        .post-form input[type="submit"] { width: auto; background-color: var(--uvm-green); color: var(--white); padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; }
-        .post-form input[type="submit"]:hover { background-color: #006644; }
-        .error { background-color: #fdd; color: var(--red-alert); padding: 10px; border: 1px solid var(--red-alert); border-radius: 4px; margin-bottom: 15px; }
-        .message { background-color: #dfd; color: var(--green-success); padding: 10px; border: 1px solid var(--green-success); border-radius: 4px; margin-bottom: 15px; }
+        :root { --uvm-green: #004b34; --white: #ffffff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; background: linear-gradient(135deg, var(--uvm-green) 0%, #006644 100%); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .register-container { background-color: var(--white); padding: 40px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); max-width: 550px; width: 100%; }
+        .logo { text-align: center; margin-bottom: 20px; }
+        .logo h1 { color: var(--uvm-green); font-size: 2.5em; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 1.1em; }
+        .error { background-color: #fdd; color: #dc3545; padding: 12px; border: 1px solid #dc3545; border-radius: 6px; margin-bottom: 20px; text-align: center; }
+        form { display: flex; flex-direction: column; }
+        label { margin-bottom: 8px; color: #333; font-weight: bold; font-size: 0.95em; }
+        input, select { padding: 12px; margin-bottom: 20px; border: 2px solid #ddd; border-radius: 6px; font-size: 15px; transition: border-color 0.3s; }
+        input:focus, select:focus { outline: none; border-color: var(--uvm-green); }
+        input[type="submit"] { background-color: var(--uvm-green); color: var(--white); border: none; cursor: pointer; padding: 14px; font-size: 16px; font-weight: bold; margin-top: 10px; transition: background-color 0.3s; }
+        input[type="submit"]:hover { background-color: #006644; }
+        .login-link { text-align: center; margin-top: 25px; padding-top: 25px; border-top: 1px solid #eee; color: #666; }
+        .login-link a { color: var(--uvm-green); text-decoration: none; font-weight: bold; }
+        .login-link a:hover { text-decoration: underline; }
+        .info-text { font-size: 0.85em; color: #666; margin-top: -15px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>UVM Lost & Found Portal 🐈🔑</h1>
-        <p>Logged in as: {{ user_name }} ({{ user_id }})</p>
-    </header>
-    <nav>
-        <a href="/">Home (All Posts)</a>
-        <a href="/add-lost">Report Lost Item</a>
-        <a href="/add-found">Report Found Item</a>
-        <a href="/register">Create Account</a>
-    </nav>
-    <div class="container">
-        {% if message %}
-            <div class="message">{{ message }}</div>
-        {% endif %}
-        {% block content %}{% endblock %}
+    <div class="register-container">
+        <div class="logo"><h1>🐈 UVM</h1></div>
+        <p class="subtitle">Create Your Account</p>
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        <form action="/register" method="post">
+            <label for="user_id">User ID</label>
+            <input type="text" id="user_id" name="user_id" required placeholder="e.g., u1234567 or NetID" autofocus>
+            <p class="info-text">Use your UVM NetID or CatamountID</p>
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" required placeholder="John Doe">
+            <label for="email">UVM Email</label>
+            <input type="email" id="email" name="email" required placeholder="example@uvm.edu">
+            <p class="info-text">Must be a unique UVM email address</p>
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required placeholder="Choose a secure password">
+            <label for="phone">Phone Number (Optional)</label>
+            <input type="tel" id="phone" name="phone" placeholder="555-123-4567">
+            <label for="role">Account Type</label>
+            <select id="role" name="role">
+                <option value="student" selected>Student</option>
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
+            </select>
+            <input type="submit" value="Create Account">
+        </form>
+        <div class="login-link">Already have an account? <a href="/login">Sign in here</a></div>
     </div>
 </body>
 </html>
