@@ -5,35 +5,32 @@
         <h2 style="color: var(--uvm-green); font-size: 2em;">Campus Lost & Found Dashboard 🎒🔑</h2>
         <p style="color: #666; font-size: 1.1em;">Help reunite lost items with their owners!</p>
     </div>
-    
+
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 30px;">
-        <!-- Lost Items Column -->
         <div>
             <div style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 15px; border-radius: 8px 8px 0 0; margin-bottom: 0;">
                 <h3 style="margin: 0; font-size: 1.5em;">😭 Lost Items</h3>
                 <p style="margin: 5px 0 0 0; opacity: 0.9;">{{ lost_posts|length }} items waiting to be found</p>
             </div>
-            
+
             <div style="background-color: white; border: 2px solid #dc3545; border-top: none; border-radius: 0 0 8px 8px; padding: 20px; min-height: 200px;">
                 {% if lost_posts %}
                     <div style="display: flex; flex-direction: column; gap: 15px;">
                         {% for post in lost_posts %}
-                            <div class="post-card lost-card">
-                                <h3>{{ post.item_name }}</h3>
-                                <p><strong>Category:</strong> {{ post.category }}</p>
-                                <p><strong>Description:</strong> {{ post.description }}</p>
-                                <p><strong>Date Lost:</strong> {{ post.date_lost }}</p>
-                                <p><strong>Last Seen:</strong> {{ post.last_seen_location }}</p>
-                                <p style="font-size: 0.85em; color: #999;">Posted: {{ post.date_posted }}</p>
-                                <p class="status-{{ post.status }}">Status: {{ post.status }}</p>
-                                
-                                <div style="margin-top: 15px; display: flex; gap: 10px;">
-                                    <a href="/lost/{{ post.lost_id }}" style="background-color: #007bff; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block; flex: 1; text-align: center;">
-                                        View Details
+                            <div class="post-card lost-link" style="padding: 15px; border-left: 5px solid #dc3545; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <a href="/lost/{{ post.lost_id }}" style="text-decoration: none; color: #333;">
+                                        <h4 style="margin: 0;">{{ post.item_name }} ({{ post.category }})</h4>
+                                        <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #666;">
+                                            Lost on: {{ post.date_lost }} in {{ post.last_seen_location }}
+                                        </p>
                                     </a>
-                                    {% if post.user_id == user_id %}
-                                        <form action="/delete-lost/{{ post.lost_id }}" method="post" style="margin: 0;">
-                                            <button type="submit" class="delete-btn" style="padding: 8px 15px; background-color: #dc3545; color: white; border-radius: 4px;">Delete</button>
+                                </div>
+                                <div style="display: flex; align-items: center;">
+                                    <span class="status-{{ post.status }}" style="margin-right: 15px;">{{ post.status | capitalize }}</span>
+                                    {% if post.user_id == user_id or user_role == 'admin' %}
+                                        <form action="/delete-lost/{{ post.lost_id }}" method="post" onsubmit="return confirm('Are you sure you want to delete this lost report?');">
+                                            <button type="submit" class="delete-btn" style="background-color: #dc3545; color: white; border-radius: 4px; padding: 5px 10px; border: none; cursor: pointer; font-size: 0.9em;">Delete</button>
                                         </form>
                                     {% endif %}
                                 </div>
@@ -42,41 +39,37 @@
                     </div>
                 {% else %}
                     <div style="text-align: center; padding: 40px 20px; color: #999;">
-                        <p style="font-size: 1.2em; margin-bottom: 10px;">🎉 No lost items currently!</p>
-                        <p>All items have been found or no reports yet.</p>
+                        <p style="font-size: 1.2em; margin-bottom: 10px;">🎉 Nothing is currently listed as lost!</p>
+                        <p>Be the first to <a href="/add-lost" style="color: #dc3545; font-weight: bold;">report a lost item</a>.</p>
                     </div>
                 {% endif %}
             </div>
         </div>
-        
-        <!-- Found Items Column -->
+
         <div>
-            <div style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); color: white; padding: 15px; border-radius: 8px 8px 0 0; margin-bottom: 0;">
+            <div style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); color: white; padding: 15px; border-radius: 8px 8px 0 0; margin-bottom: 0;">
                 <h3 style="margin: 0; font-size: 1.5em;">✨ Found Items</h3>
-                <p style="margin: 5px 0 0 0; opacity: 0.9;">{{ found_posts|length }} items waiting to be claimed</p>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;">{{ found_posts|length }} items ready to be returned</p>
             </div>
-            
+
             <div style="background-color: white; border: 2px solid #28a745; border-top: none; border-radius: 0 0 8px 8px; padding: 20px; min-height: 200px;">
                 {% if found_posts %}
                     <div style="display: flex; flex-direction: column; gap: 15px;">
                         {% for post in found_posts %}
-                            <div class="post-card found-card">
-                                <h3>{{ post.item_name }}</h3>
-                                <p><strong>Category:</strong> {{ post.category }}</p>
-                                <p><strong>Description:</strong> {{ post.description }}</p>
-                                <p><strong>Date Found:</strong> {{ post.date_found }}</p>
-                                <p><strong>Found At:</strong> {{ post.found_location }}</p>
-                                <p><strong>Storage:</strong> {{ post.storage_location }}</p>
-                                <p style="font-size: 0.85em; color: #999;">Posted: {{ post.date_posted }}</p>
-                                <p class="status-{{ post.status }}">Status: {{ post.status }}</p>
-                                
-                                <div style="margin-top: 15px; display: flex; gap: 10px;">
-                                    <a href="/found/{{ post.found_id }}" style="background-color: #28a745; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block; flex: 1; text-align: center;">
-                                        View Details
+                            <div class="post-card found-link" style="padding: 15px; border-left: 5px solid #28a745; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <a href="/found/{{ post.found_id }}" style="text-decoration: none; color: #333;">
+                                        <h4 style="margin: 0;">{{ post.item_name }} ({{ post.category }})</h4>
+                                        <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #666;">
+                                            Found on: {{ post.date_found }} in {{ post.found_location }}
+                                        </p>
                                     </a>
-                                    {% if post.user_id == user_id %}
-                                        <form action="/delete-found/{{ post.found_id }}" method="post" style="margin: 0;">
-                                            <button type="submit" class="delete-btn" style="padding: 8px 15px; background-color: #dc3545; color: white; border-radius: 4px;">Delete</button>
+                                </div>
+                                <div style="display: flex; align-items: center;">
+                                    <span class="status-{{ post.status }}" style="margin-right: 15px;">{{ post.status | capitalize }}</span>
+                                    {% if post.user_id == user_id or user_role == 'admin' %}
+                                        <form action="/delete-found/{{ post.found_id }}" method="post" onsubmit="return confirm('Are you sure you want to delete this found report?');">
+                                            <button type="submit" class="delete-btn" style="background-color: #dc3545; color: white; border-radius: 4px; padding: 5px 10px; border: none; cursor: pointer; font-size: 0.9em;">Delete</button>
                                         </form>
                                     {% endif %}
                                 </div>
@@ -92,7 +85,7 @@
             </div>
         </div>
     </div>
-    
+
     <div style="text-align: center; margin-top: 40px; padding: 30px; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         <h3 style="color: var(--uvm-green); margin-bottom: 15px;">Need to report an item?</h3>
         <div style="display: flex; justify-content: center; gap: 20px;">

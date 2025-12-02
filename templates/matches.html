@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <div style="max-width: 900px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="color: var(--uvm-green); font-size: 2.2em;">🤝 Item Match Reports</h2>
+            <p style="color: #666; font-size: 1.1em;">
+                {% if user_role == 'admin' %}
+                    Review all pending matches.
+                {% else %}
+                    Matches related to your lost or found reports.
+                {% endif %}
+            </p>
+        </div>
+
+        {% if matches %}
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                {% for match in matches %}
+                    <div class="post-card" style="border-left: 6px solid {% if match.resolved == 0 %}#ffc107{% else %}#28a745{% endif %};">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+                            <h3 style="margin: 0; color: #333;">Match ID: {{ match.match_id }}</h3>
+                            <span class="status-{{ 'resolved' if match.resolved else 'pending' }}" style="font-weight: bold; color: {% if match.resolved == 0 %}#ffc107{% else %}#28a745{% endif %};">
+                                Status: {{ 'Resolved' if match.resolved else 'Pending' }}
+                            </span>
+                        </div>
+
+                        <p><strong>Date Matched:</strong> {{ match.date_matched }}</p>
+                        <p><strong>Claimed By:</strong> {{ match.matched_by_user_name }} ({{ match.matched_by_user_id }})</p>
+
+                        <div style="margin-top: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                            <p style="margin: 0 0 5px 0;"><strong>Lost Item:</strong>
+                                <a href="/lost/{{ match.lost_id }}" style="color: #dc3545; font-weight: bold;">
+                                    {{ match.lost_item_name }} ({{ match.lost_id }})
+                                </a>
+                            </p>
+                            <p style="margin: 0;"><strong>Found Item:</strong>
+                                <a href="/found/{{ match.found_id }}" style="color: #28a745; font-weight: bold;">
+                                    {{ match.found_item_name }} ({{ match.found_id }})
+                                </a>
+                            </p>
+                        </div>
+
+                        {% if user_role == 'admin' and match.resolved == 0 %}
+                            <form action="/admin/resolve/{{ match.match_id }}" method="post" style="margin-top: 15px; text-align: right;">
+                                <p style="font-size: 0.9em; color: #666; margin-bottom: 5px;">* Only mark as resolved after item has been successfully returned.</p>
+                                <button type="submit" style="background-color: var(--uvm-green); color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;">
+                                    Admin: Mark as Resolved
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 40px 20px; color: #999; background-color: white; border-radius: 8px;">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">No pending matches.</p>
+                {% if user_role == 'admin' %}
+                    <p>All items have been matched and resolved!</p>
+                {% else %}
+                    <p>You have no current or past matches on record.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

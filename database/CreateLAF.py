@@ -1,14 +1,15 @@
-# imports
-import sqlite3
+import sqlite3 as sql
+from database.db import hash_password
 
 # Connect to database
-conn = sqlite3.connect("lost_and_found.db")
+DB = "lost_and_found.db"
+conn = sql.connect(DB)
 cur = conn.cursor()
 
 # Enable foreign keys
 cur.execute("PRAGMA foreign_keys = ON;")
 
-# DROP TABLES needed
+# DROP TABLES needed (for a clean rebuild)
 cur.execute("DROP TABLE IF EXISTS Matches")
 cur.execute("DROP TABLE IF EXISTS FoundPosts")
 cur.execute("DROP TABLE IF EXISTS LostPosts")
@@ -23,7 +24,7 @@ CREATE TABLE IF NOT EXISTS Users (
     phone TEXT,
     password_hash TEXT NOT NULL,
     role TEXT DEFAULT 'student' CHECK(role IN ('student', 'staff', 'admin')),
-    date_joined DATE DEFAULT CURRENT_DATE
+    date_joined DATE DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now'))
 )
 """)
 
@@ -40,7 +41,7 @@ CREATE TABLE IF NOT EXISTS LostPosts (
     description TEXT,
     date_lost DATE,
     last_seen_location TEXT,
-    date_posted TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_posted TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')),
     status TEXT DEFAULT 'open' CHECK(status IN ('open', 'matched', 'closed')),
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
 )
@@ -53,14 +54,14 @@ CREATE TABLE IF NOT EXISTS FoundPosts (
     user_id TEXT NOT NULL,
     item_name TEXT NOT NULL,
     category TEXT CHECK(category IN (
-        'Electronics', 'Clothing', 'Accessories',
+        'Electronics', 'Clothing', 'Accessories', 
         'Documents', 'Keys', 'Books', 'Other'
     )),
     description TEXT,
     date_found DATE,
     found_location TEXT,
-    storage_location TEXT DEFAULT 'Campus Security Office',
-    date_posted TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    storage_location TEXT,
+    date_posted TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')),
     status TEXT DEFAULT 'available' CHECK(status IN ('available', 'matched', 'returned')),
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
 )
@@ -73,7 +74,7 @@ CREATE TABLE IF NOT EXISTS Matches (
     lost_id TEXT NOT NULL,
     found_id TEXT NOT NULL,
     matched_by_user_id TEXT,
-    date_matched TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_matched TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')),
     resolved INTEGER DEFAULT 0,
     notes TEXT,
     FOREIGN KEY (lost_id) REFERENCES LostPosts(lost_id) ON DELETE CASCADE,
@@ -82,7 +83,7 @@ CREATE TABLE IF NOT EXISTS Matches (
 )
 """)
 
-# INDEXES
+# INDEXES (for performance)
 cur.execute("CREATE INDEX IF NOT EXISTS idx_lost_category ON LostPosts(category)")
 cur.execute("CREATE INDEX IF NOT EXISTS idx_lost_status ON LostPosts(status)")
 cur.execute("CREATE INDEX IF NOT EXISTS idx_lost_date ON LostPosts(date_lost)")
@@ -93,8 +94,15 @@ cur.execute("CREATE INDEX IF NOT EXISTS idx_found_date ON FoundPosts(date_found)
 
 cur.execute("CREATE INDEX IF NOT EXISTS idx_match_resolved ON Matches(resolved)")
 
+# --- INSERT TEST USER (Admin: uadmin/password123) ---
+admin_password_hash = hash_password("password123")
+cur.execute("""
+    INSERT INTO Users (user_id, name, email, password_hash, role)
+    VALUES (?, ?, ?, ?, ?)
+""", ("uadmin", "System Admin", "admin@college.edu", admin_password_hash, "admin"))
+
 # Save changes and close
 conn.commit()
 conn.close()
 
-print("Database schema created successfully with password support this is new yayayayayayay kalei!")
+print(f"Database schema created successfully in {DB} and 'uadmin' (password123) created.")

@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <div style="max-width: 600px; margin: 50px auto; padding: 30px; background-color: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 5px solid #dc3545;">
+        <h2 style="text-align: center; color: #dc3545; margin-bottom: 20px;">🚨 An Error Occurred</h2>
+
+        <div class="error" style="font-size: 1.1em; padding: 20px; text-align: center;">
+            <p style="font-weight: bold;">Error Details:</p>
+            <p>{{ error }}</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="/" style="background-color: var(--uvm-green); color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                Go to Dashboard
+            </a>
+            {% if user_role != 'guest' %}
+            <a href="/matches" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-left: 10px;">
+                View My Matches
+            </a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

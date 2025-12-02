@@ -41,6 +41,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-wrap: wrap;
         }
         nav a {
             color: var(--white);
@@ -51,123 +52,107 @@
             transition: background-color 0.2s;
         }
         nav a:hover {
-            background-color: var(--uvm-gold);
-            color: var(--uvm-green);
-        }
-        nav a.logout {
-            margin-left: auto;
-            background-color: var(--red-alert);
-        }
-        nav a.logout:hover {
-            background-color: #c82333;
-            color: var(--white);
+            background-color: #555;
         }
         .container {
-            width: 90%;
-            max-width: 1200px;
-            margin: 3em auto;
+            width: 95%;
+            max-width: 1400px;
+            margin: 2em auto;
         }
         .post-card {
             background-color: var(--white);
-            border: 1px solid #ddd;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
         }
-        .post-card h3 {
+        .post-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .post-card h4 {
             margin-top: 0;
-            color: var(--uvm-green);
-            border-bottom: 2px solid var(--uvm-gold);
-            padding-bottom: 5px;
+            font-size: 1.2em;
         }
-        .lost-card {
-            border-left: 8px solid var(--red-alert);
-        }
-        .found-card {
-            border-left: 8px solid var(--green-success);
-        }
-        .status-open {
-            color: var(--red-alert);
-            font-weight: bold;
-        }
-        .status-available {
-            color: var(--green-success);
-            font-weight: bold;
-        }
-        .status-matched, .status-closed, .status-returned {
-            color: var(--uvm-gold);
-        }
-        .delete-btn {
-            background: none;
-            border: none;
-            color: var(--red-alert);
-            cursor: pointer;
-            padding: 0;
-            font-size: 0.9em;
-            margin-left: 10px;
-        }
-        .delete-btn:hover {
-            text-decoration: underline;
-        }
-        .post-form label, .post-form input, .post-form select, .post-form textarea {
+        .lost-link { border-left: 5px solid var(--red-alert); }
+        .found-link { border-left: 5px solid var(--green-success); }
+        .status-open { color: var(--red-alert); font-weight: bold; }
+        .status-available { color: var(--green-success); font-weight: bold; }
+        .status-matched, .status-closed, .status-returned { color: var(--uvm-gold); font-weight: bold; }
+
+        .post-form label, .post-form input:not([type="submit"]), .post-form select, .post-form textarea {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
             box-sizing: border-box;
         }
-        .post-form input, .post-form select, .post-form textarea {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
+        .post-form textarea {
+            min-height: 100px;
+            resize: vertical;
         }
         .post-form input[type="submit"] {
-            width: auto;
+            width: 100%;
             background-color: var(--uvm-green);
             color: var(--white);
             padding: 10px 15px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            font-weight: bold;
         }
         .post-form input[type="submit"]:hover {
             background-color: #006644;
         }
         .error {
-            background-color: #fdd;
+            background-color: #f8d7da;
             color: var(--red-alert);
-            padding: 10px;
-            border: 1px solid var(--red-alert);
+            padding: 15px;
+            border: 1px solid #f5c6cb;
             border-radius: 4px;
             margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
         }
         .message {
-            background-color: #dfd;
+            background-color: #d4edda;
             color: var(--green-success);
-            padding: 10px;
-            border: 1px solid var(--green-success);
+            padding: 15px;
+            border: 1px solid #c3e6cb;
             border-radius: 4px;
             margin-bottom: 15px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <header>
         <h1>UVM Lost & Found Portal 🐈🔑</h1>
-        <p>Logged in as: {{ user_name }} ({{ user_id }}) - Role: {{ user_role }}</p>
+        {% if user_id %}
+            <p>Logged in as: {{ user_name }} ({{ user_id }}) - Role: {{ user_role | capitalize }}</p>
+        {% else %}
+            <p>You are viewing this as a guest. Please log in.</p>
+        {% endif %}
     </header>
+
+    {% if user_id %}
     <nav>
         <a href="/">Home Dashboard</a>
         <a href="/add-lost">Report Lost Item</a>
         <a href="/add-found">Report Found Item</a>
         <a href="/matches">My Matches</a>
-        <a href="/logout" class="logout">Logout</a>
-    </nav>
-    <div class="container">
-        {% if message %}
-            <div class="message">{{ message }}</div>
+        {% if user_role == 'admin' %}
+            <a href="/matches" style="color: var(--uvm-gold); font-weight: bold;">Admin Review</a>
         {% endif %}
+        <a href="/logout" style="background-color: #dc3545;">Logout</a>
+    </nav>
+    {% endif %}
+
+    <div class="container">
         {% block content %}{% endblock %}
     </div>
+
 </body>
 </html>
