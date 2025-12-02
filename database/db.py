@@ -1,38 +1,85 @@
 import sqlite3 as sql
-#tetsing git
+
 DB = "lost_and_found.db"
 
-def get_lost_posts():
-    connection = sql.connect(DB)
-    cursor = connection.cursor()
-    cursor.execute("SELECT * FROM LostPosts")
-    rows = cursor.fetchall()
-    connection.close()
+def get_connection():
+    conn = sql.connect(DB)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    return conn
 
-    lost_posts = []
-    for row in rows:
-        lost_posts.append({
-            "lost_id": row[0],
-            "user_id": row[1],
-            "item_name": row[2],
-            "category": row[3],
-            "description": row[4],
-            "date_lost": row[5],
-            "last_seen_location": row[6],
-            "date_posted": row[7],
-            "status": row[8]
-        })
-    return lost_posts
+#USERS
+def add_user(user_id: str, name: str, email: str, phone: str = None, role: str = "student"):
+    """
+    Adds a new user to the Users table.
+    Includes full error handling for: duplicate user_idduplicate email, invalid role
+    """
+    try:
+        connection = sql.connect(DB)
+        cursor = connection.cursor()
+
+        cursor.execute("""
+            INSERT INTO Users (user_id, name, email, phone, role)
+            VALUES (?, ?, ?, ?, ?)
+        """, (user_id, name, email, phone, role))
+
+        connection.commit()
+        return True, "User successfully added."
+
+    except sql.IntegrityError as e:
+        # SQLite constraint violations (UNIQUE, CHECK, FOREIGN KEY)
+        if "UNIQUE constraint failed: Users.email" in str(e):
+            return False, "Error: Email is already registered."
+        elif "UNIQUE constraint failed: Users.user_id" in str(e):
+            return False, "Error: This user ID already exists."
+        elif "CHECK constraint failed" in str(e):
+            return False, "Error: Invalid role. Must be student/staff/admin."
+        else:
+            return False, f"Integrity error: {e}"
+
+    except Exception as e:
+        return False, f"Unknown error: {e}"
+
+    finally:
+        connection.close()
+
+
+#POSTS
+def get_lost_posts():
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM LostPosts")
+        rows = cur.fetchall()
+        return [
+            {
+                "lost_id": row[0],
+                "user_id": row[1],
+                "item_name": row[2],
+                "category": row[3],
+                "description": row[4],
+                "date_lost": row[5],
+                "last_seen_location": row[6],
+                "date_posted": row[7],
+                "status": row[8]  # should be 'open' or 'matched'
+            }
+            for row in rows
+        ]
+    except sql.Error as e:
+        print("Error retrieving lost posts:", e)
+        return []
+    finally:
+        if conn:
+            conn.close()
 
 
 def get_lost_post(lost_id: str):
-    connection = sql.connect(DB)
-    cursor = connection.cursor()
-    cursor.execute("SELECT * FROM LostPosts WHERE lost_id = ?", (lost_id,))
-    row = cursor.fetchone()
-    connection.close()
-
-    if row:
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM LostPosts WHERE lost_id = ?", (lost_id,))
+        row = cur.fetchone()
+        if not row:
+            return None
         return {
             "lost_id": row[0],
             "user_id": row[1],
@@ -44,129 +91,177 @@ def get_lost_post(lost_id: str):
             "date_posted": row[7],
             "status": row[8]
         }
-    return None
+    except sql.Error as e:
+        print("Error retrieving lost post:", e)
+        return None
+    finally:
+        if conn:
+            conn.close()
 
 
-def add_lost_post(lost_id: str, user_id: str, item_name: str,
-                  category: str, description: str,
-                  date_lost: str, last_seen_location: str):
+def add_lost_post(lost_id, user_id, item_name, category,
+                  description, date_lost, last_seen_location):
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
 
-    connection = sql.connect(DB)
-    cursor = connection.cursor()
+        cur.execute("""
+            INSERT INTO LostPosts (lost_id, user_id, item_name, category,
+                description, date_lost, last_seen_location)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (lost_id, user_id, item_name, category,
+              description, date_lost, last_seen_location))
 
-    cursor.execute("""
-        INSERT INTO LostPosts (lost_id, user_id, item_name, category,
-                               description, date_lost, last_seen_location)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (lost_id, user_id, item_name, category,
-          description, date_lost, last_seen_location))
-
-    connection.commit()
-    connection.close()
+        conn.commit()
+    except sql.Error as e:
+        print("Error adding lost post:", e)
+    finally:
+        if conn:
+            conn.close()
 
 
-def delete_lost_post(lost_id: str):
-    connection = sql.connect(DB)
-    cursor = connection.cursor()
-    cursor.execute("DELETE FROM LostPosts WHERE lost_id = ?", (lost_id,))
-    connection.commit()
-    connection.close()
+def delete_lost_post(lost_id):
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM LostPosts WHERE lost_id = ?", (lost_id,))
+        conn.commit()
+    except sql.Error as e:
+        print("Error deleting lost post:", e)
+    finally:
+        if conn:
+            conn.close()
 
 
 def get_found_posts():
-    connection = sql.connect(DB)
-    cursor = connection.cursor()
-    cursor.execute("SELECT * FROM FoundPosts")
-    rows = cursor.fetchall()
-    connection.close()
-
-    found_posts = []
-    for row in rows:
-        found_posts.append({
-            "found_id": row[0],
-            "user_id": row[1],
-            "item_name": row[2],
-            "category": row[3],
-            "description": row[4],
-            "date_found": row[5],
-            "found_location": row[6],
-            "storage_location": row[7],
-            "date_posted": row[8],
-            "status": row[9]
-        })
-    return found_posts
-
-
-def get_found_post(found_id: str):
-    connection = sql.connect(DB)
-    cursor = connection.cursor()
-    cursor.execute("SELECT * FROM FoundPosts WHERE found_id = ?", (found_id,))
-    row = cursor.fetchone()
-    connection.close()
-
-    if row:
-        return {
-            "found_id": row[0],
-            "user_id": row[1],
-            "item_name": row[2],
-            "category": row[3],
-            "description": row[4],
-            "date_found": row[5],
-            "found_location": row[6],
-            "storage_location": row[7],
-            "date_posted": row[8],
-            "status": row[9]
-        }
-    return None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM FoundPosts")
+        rows = cur.fetchall()
+        return [
+            {
+                "found_id": row[0],
+                "user_id": row[1],
+                "item_name": row[2],
+                "category": row[3],
+                "description": row[4],
+                "date_found": row[5],
+                "found_location": row[6],
+                "storage_location": row[7],
+                "date_posted": row[8],
+                "status": row[9]  # available, matched
+            }
+            for row in rows
+        ]
+    except sql.Error as e:
+        print("Error retrieving found posts:", e)
+        return []
+    finally:
+        if conn:
+            conn.close()
 
 
-def add_found_post(found_id: str, user_id: str, item_name: str,
-                   category: str, description: str,
-                   date_found: str, found_location: str,
-                   storage_location: str = "Campus Security Office"):
+def add_found_post(found_id, user_id, item_name, category,
+                   description, date_found, found_location,
+                   storage_location="Campus Security Office"):
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
 
-    connection = sql.connect(DB)
-    cursor = connection.cursor()
+        cur.execute("""
+            INSERT INTO FoundPosts (found_id, user_id, item_name, category,
+                description, date_found, found_location, storage_location)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (found_id, user_id, item_name, category, description,
+              date_found, found_location, storage_location))
 
-    cursor.execute("""
-        INSERT INTO FoundPosts (found_id, user_id, item_name, category,
-                                description, date_found, found_location,
-                                storage_location)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (found_id, user_id, item_name, category,
-          description, date_found, found_location, storage_location))
-
-    connection.commit()
-    connection.close()
+        conn.commit()
+    except sql.Error as e:
+        print("Error adding found post:", e)
+    finally:
+        if conn:
+            conn.close()
 
 
-def delete_found_post(found_id: str):
-    connection = sql.connect(DB)
-    cursor = connection.cursor()
-    cursor.execute("DELETE FROM FoundPosts WHERE found_id = ?", (found_id,))
-    connection.commit()
-    connection.close()
-
-print("Database module loaded.")
+def delete_found_post(found_id):
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM FoundPosts WHERE found_id = ?", (found_id,))
+        conn.commit()
+    except sql.Error as e:
+        print("Error deleting found post:", e)
+    finally:
+        if conn:
+            conn.close()
 
 
 """
-testing code
+Admin Tools
 """
+def admin_match_items(lost_id: str, found_id: str, admin_user_id: str, notes: str = ""):
+    """
+    Creates a match between a lost and found item.
+    Sets statuses to 'matched'.
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
 
+        # Insert match
+        cur.execute("""
+            INSERT INTO Matches (lost_id, found_id, matched_by_user_id, notes)
+            VALUES (?, ?, ?, ?)
+        """, (lost_id, found_id, admin_user_id, notes))
+
+        # Update statuses
+        cur.execute("UPDATE LostPosts SET status = 'matched' WHERE lost_id = ?", (lost_id,))
+        cur.execute("UPDATE FoundPosts SET status = 'matched' WHERE found_id = ?", (found_id,))
+
+        conn.commit()
+        print("Items matched successfully!")
+
+    except sql.IntegrityError as e:
+        print("ERROR: Matching failed:", e)
+    finally:
+        conn.close()
+
+
+def admin_resolve_match(match_id: int):
+    """
+    Marks a match as resolved (1 = resolved)
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE Matches SET resolved = 1 WHERE match_id = ?", (match_id,))
+        conn.commit()
+        print(f"Match {match_id} marked as resolved.")
+    except Exception as e:
+        print("ERROR resolving match:", e)
+    finally:
+        conn.close()
+
+
+print("Database module loaded with error handling + admin tools.")
+
+
+
+# TESTING
 if __name__ == "__main__":
-    # Add a lost post
-    add_lost_post("lost123", "user100", "Wallet", "Accessories",
-                  "Black leather wallet", "2024-06-15", "Library")
 
-    # Retrieve and print lost posts
-    lost_posts = get_lost_posts()
-    print("Lost Posts:", lost_posts)
+    print("\n--- TEST 1 (this should work) ---")
+    add_user("u900", "Test User", "test@college.edu", "555-1234", "student")
 
-    # Add a found post
-    add_found_post("found123", "user100", "Keys", "Keys",
-                   "Set of car keys with a red keychain", "2024-06-16", "Cafeteria")
+    print("\n--- TEST 2  ---")
+    add_lost_post("lost900", "u900", "Backpack", "Accessories",
+                  "Blue backpack with laptop compartment", "2025-02-01", "Library")
 
-    # Retrieve and print found posts
-    found_posts = get_found_posts()
-    print("Found Posts:", found_posts)
+    print("\n--- TEST 3 (this should fail should FAIL) ---")
+    # category "Food" is NOT allowed under category constraint
+    add_lost_post("lost901", "u900", "Sandwich", "Food",
+                  "Turkey sandwich", "2025-02-01", "Cafeteria")
+
+    print("\nLost Posts Now:")
+    print(get_lost_posts())
