@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <div style="max-width: 800px; margin: 0 auto;">
+        <div style="margin-bottom: 20px;">
+            <a href="/" style="color: var(--uvm-green); text-decoration: none; font-weight: bold;">← Back to Dashboard</a>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="color: #28a745; font-size: 2.2em;">✨ Found Item Details</h2>
+        </div>
+        
+        <div class="post-card found-card" style="margin-bottom: 30px;">
+            <h3 style="font-size: 1.8em;">{{ post.item_name }}</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                <div>
+                    <p><strong>Category:</strong> {{ post.category }}</p>
+                    <p><strong>Date Found:</strong> {{ post.date_found }}</p>
+                    <p><strong>Found Location:</strong> {{ post.found_location }}</p>
+                </div>
+                <div>
+                    <p><strong>Reported By:</strong> {{ post.user_id }}</p>
+                    <p><strong>Date Posted:</strong> {{ post.date_posted }}</p>
+                    <p class="status-{{ post.status }}"><strong>Status:</strong> {{ post.status }}</p>
+                </div>
+            </div>
+            
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin-top: 20px;">
+                <p style="margin: 0;"><strong>Description:</strong></p>
+                <p style="margin: 10px 0 0 0; line-height: 1.6;">{{ post.description }}</p>
+            </div>
+            
+            <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 6px; margin-top: 15px;">
+                <p style="margin: 0; color: #0c5460;"><strong>📍 Current Storage Location:</strong></p>
+                <p style="margin: 10px 0 0 0; color: #0c5460; font-size: 1.1em;">{{ post.storage_location }}</p>
+            </div>
+        </div>
+        
+        {% if post.status == 'available' and post.user_id != user_id %}
+            <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 6px solid #dc3545;">
+                <h3 style="color: #dc3545; margin-top: 0; font-size: 1.6em;">😭 Is This Your Lost Item?</h3>
+                <p style="color: #666; margin-bottom: 25px;">If you've reported a lost item that matches this found item, select it below to create a match:</p>
+                
+                {% if lost_posts %}
+                    <form action="/claim" method="post" class="post-form">
+                        <input type="hidden" name="found_id" value="{{ post.found_id }}">
+                        
+                        <label for="lost_id">Select Your Lost Item Report:</label>
+                        <select id="lost_id" name="lost_id" required style="padding: 12px;">
+                            <option value="">-- Select a Lost Item --</option>
+                            {% for lost in lost_posts %}
+                                <option value="{{ lost.lost_id }}">
+                                    {{ lost.item_name }} - {{ lost.category }} (Lost: {{ lost.last_seen_location }} on {{ lost.date_lost }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        
+                        <label for="notes">Additional Notes (Optional):</label>
+                        <textarea id="notes" name="notes" rows="3" placeholder="Explain why you believe this is your item..."></textarea>
+                        
+                        <input type="submit" value="Claim This Item 🔗" style="background-color: #dc3545;">
+                    </form>
+                {% else %}
+                    <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 20px; border-radius: 6px; text-align: center;">
+                        <p style="color: #856404; margin: 0; font-size: 1.1em;">No open lost items to match with right now.</p>
+                        <p style="color: #856404; margin: 10px 0 0 0;">If this is your item, please <a href="/add-lost" style="color: #856404; font-weight: bold;">report it as lost first</a>, then come back to create a match!</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+        {% elif post.status == 'matched' %}
+            <div class="message" style="text-align: center; padding: 25px; font-size: 1.1em;">
+                <strong>🎉 This item has been matched with its owner!</strong><br>
+                Check the <a href="/matches" style="color: #28a745; font-weight: bold;">Matches page</a> for details and pickup information.
+            </div>
+            
+        {% elif post.user_id == user_id %}
+            <div style="background-color: #e7f3ff; border: 1px solid #b3d9ff; padding: 25px; border-radius: 8px; text-align: center;">
+                <p style="color: #004085; margin: 0; font-size: 1.1em;">
+                    <strong>This is your post.</strong><br>
+                    You cannot match your own found item report. Wait for the owner to create a match!
+                </p>
+            </div>
+            
+        {% endif %}
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="/" style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                ← Return to Dashboard
+            </a>
+        </div>
+    </div>
+{% endblock %}
