@@ -14,13 +14,14 @@ cur.execute("DROP TABLE IF EXISTS FoundPosts")
 cur.execute("DROP TABLE IF EXISTS LostPosts")
 cur.execute("DROP TABLE IF EXISTS Users")
 
-# USERS TABLE
+# USERS TABLE - NOW WITH PASSWORD
 cur.execute("""
 CREATE TABLE IF NOT EXISTS Users (
     user_id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     phone TEXT,
+    password_hash TEXT NOT NULL,
     role TEXT DEFAULT 'student' CHECK(role IN ('student', 'staff', 'admin')),
     date_joined DATE DEFAULT CURRENT_DATE
 )
@@ -96,4 +97,4 @@ cur.execute("CREATE INDEX IF NOT EXISTS idx_match_resolved ON Matches(resolved)"
 conn.commit()
 conn.close()
 
-print("Database schema created successfully!")
+print("Database schema created successfully with password support this is new yayayayayayay kalei!")
