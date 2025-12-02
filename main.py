@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette import status
-import uuid  # Used for generating unique IDs for lost/found posts
+import uuid  # Used for generating unique IDs for posts
 from database.db import (
     get_lost_posts,
     get_found_posts,
@@ -11,45 +11,47 @@ from database.db import (
     delete_lost_post,
     add_found_post,
     delete_found_post,
-    add_user, # i need this to mock a user
+    add_user,
+    get_all_users,  # Added to check if any user exists
 )
 
 # --- FastAPI Setup ---
 app = FastAPI()
-
-# Mount a directory for static files (e.g., CSS, images)
-# For simplicity, I'm assuming a 'static' folder exists in the same directory as main.py
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Configure Jinja2 templates
-# For simplicity, I'm assuming a 'templates' folder exists in the same directory as main.py
 templates = Jinja2Templates(directory="templates")
 
-# --- Helper Functions (Mocking User and Data for Demo) ---
+# --- Application Constants ---
+# In a real application, you'd use a session/cookie to manage the logged-in user.
+# For this demo, we'll simulate a logged-in user (u900) for posting/deleting,
+# but the registration route is fully functional.
+MOCK_USER_ID = "u900"
+MOCK_USER_NAME = "Demo User"
 
-# Mock a user ID since posts require one.
-# You would replace this with actual authentication logic.
-MOCK_USER_ID = "u001"
-
-# Ensure the mock user exists for Foreign Key constraints
-# In a real app, this would happen during user registration/login.
-success, message = add_user(MOCK_USER_ID, "Test User", "test@college.edu")
-if not success and "already exists" not in message:
-    print(f"Failed to ensure mock user exists: {message}")
-
-# Valid categories for form validation
+# Valid categories from your CreateLAF.py
 VALID_CATEGORIES = [
     'Electronics', 'Clothing', 'Accessories',
     'Documents', 'Keys', 'Books', 'Other'
 ]
 
 
+# --- Initial Setup (Ensuring Mock User and Data) ---
+def ensure_mock_user():
+    """Checks if the mock user exists and adds them if not."""
+    if not get_all_users():  # If no users exist, ensure the mock user is available
+        success, message = add_user(MOCK_USER_ID, MOCK_USER_NAME, "demo@uvm.edu", "555-1234", "student")
+        if not success and "already exists" not in message:
+            print(f"Failed to ensure mock user exists: {message}")
+
+
+ensure_mock_user()
+
+
 # --- Routes ---
+
+## 🌎 Homepage Route
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    """
-    Displays the homepage with lists of all Lost and Found posts.
-    """
+    """Displays the homepage with lists of all Lost and Found posts."""
     lost_posts = get_lost_posts()
     found_posts = get_found_posts()
 
@@ -63,21 +65,60 @@ async def home(request: Request):
             "request": request,
             "lost_posts": lost_posts,
             "found_posts": found_posts,
-            "user_id": MOCK_USER_ID
+            "user_id": MOCK_USER_ID,  # Pass the current user ID for delete permissions
+            "user_name": MOCK_USER_NAME
         }
     )
 
 
-## Lost Post Routes
+# --- 👤 Registration Routes ---
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_form(request: Request):
+    """Displays the form to create a new user account."""
+    return templates.TemplateResponse("register.html", {"request": request, "error": None})
+
+
+@app.post("/register", response_class=HTMLResponse)
+async def create_account(
+        request: Request,
+        user_id: str = Form(...),
+        name: str = Form(...),
+        email: str = Form(...),
+        phone: str = Form(None),
+        role: str = Form("student")  # Default role
+):
+    """Handles the form submission to create a new user account."""
+    success, message = add_user(user_id, name, email, phone, role)
+
+    if success:
+        # Success message, then redirect to home
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "message": f"Account created successfully for {name}! You can now post.",
+                "user_id": user_id,
+                "user_name": name,
+                "lost_posts": get_lost_posts(),
+                "found_posts": get_found_posts(),
+            }
+        )
+    else:
+        # Display the error message back on the registration form
+        return templates.TemplateResponse(
+            "register.html",
+            {"request": request, "error": f"Registration Failed: {message}"}
+        )
+
+
+# --- 🔎 Lost Post Routes ---
 
 @app.get("/add-lost", response_class=HTMLResponse)
 async def add_lost_post_form(request: Request):
-    """
-    Displays the form to add a new Lost Post.
-    """
     return templates.TemplateResponse(
         "add_lost.html",
-        {"request": request, "categories": VALID_CATEGORIES}
+        {"request": request, "categories": VALID_CATEGORIES, "user_id": MOCK_USER_ID}
     )
 
 
@@ -90,17 +131,7 @@ async def create_lost_post(
         date_lost: str = Form(...),
         last_seen_location: str = Form(...)
 ):
-    """
-    Handles the form submission to create a new Lost Post.
-    """
-    new_id = "lost" + str(uuid.uuid4().hex[:8])  # Generate a simple unique ID
-
-    # Simple validation for category
-    if category not in VALID_CATEGORIES:
-        return templates.TemplateResponse(
-            "add_lost.html",
-            {"request": request, "error": "Invalid category selected.", "categories": VALID_CATEGORIES}
-        )
+    new_id = "lost" + str(uuid.uuid4().hex[:8])
 
     try:
         add_lost_post(
@@ -112,10 +143,8 @@ async def create_lost_post(
             date_lost=date_lost,
             last_seen_location=last_seen_location,
         )
-        # Redirect back to the homepage after successful submission
         return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
     except Exception as e:
-        # Pass an error message to the template
         return templates.TemplateResponse(
             "add_lost.html",
             {"request": request, "error": f"Database error: {e}", "categories": VALID_CATEGORIES}
@@ -124,24 +153,17 @@ async def create_lost_post(
 
 @app.post("/delete-lost/{lost_id}", response_class=HTMLResponse)
 async def remove_lost_post(request: Request, lost_id: str):
-    """
-    Deletes a specific Lost Post.
-    """
     delete_lost_post(lost_id)
-    # Redirect back to the homepage
     return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
 
-## Found Post Routes
+# --- 🤝 Found Post Routes ---
 
 @app.get("/add-found", response_class=HTMLResponse)
 async def add_found_post_form(request: Request):
-    """
-    Displays the form to add a new Found Post.
-    """
     return templates.TemplateResponse(
         "add_found.html",
-        {"request": request, "categories": VALID_CATEGORIES}
+        {"request": request, "categories": VALID_CATEGORIES, "user_id": MOCK_USER_ID}
     )
 
 
@@ -155,16 +177,7 @@ async def create_found_post(
         found_location: str = Form(...),
         storage_location: str = Form("Campus Security Office")
 ):
-    """
-    Handles the form submission to create a new Found Post.
-    """
-    new_id = "found" + str(uuid.uuid4().hex[:8])  # Generate a simple unique ID
-
-    if category not in VALID_CATEGORIES:
-        return templates.TemplateResponse(
-            "add_found.html",
-            {"request": request, "error": "Invalid category selected.", "categories": VALID_CATEGORIES}
-        )
+    new_id = "found" + str(uuid.uuid4().hex[:8])
 
     try:
         add_found_post(
@@ -187,8 +200,5 @@ async def create_found_post(
 
 @app.post("/delete-found/{found_id}", response_class=HTMLResponse)
 async def remove_found_post(request: Request, found_id: str):
-    """
-    Deletes a specific Found Post.
-    """
     delete_found_post(found_id)
     return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)

@@ -43,6 +43,33 @@ def add_user(user_id: str, name: str, email: str, phone: str = None, role: str =
         connection.close()
 
 
+def get_all_users():
+    """
+    Retrieves a list of all users from the Users table.
+    This is used by main.py to check if any accounts exist.
+    """
+    users = []
+    conn = None
+    try:
+        conn = get_connection()
+        # Allows accessing columns by name instead of index
+        conn.row_factory = sql.Row
+        cur = conn.cursor()
+
+        # Select key user details
+        cur.execute("SELECT user_id, name, email, role, date_joined FROM Users")
+
+        # Convert sql.Row objects to standard dictionaries
+        users = [dict(row) for row in cur.fetchall()]
+
+    except Exception as e:
+        print("ERROR retrieving all users:", e)
+        # Note: We return an empty list on error, which is appropriate for a getter function.
+    finally:
+        # Ensure connection is closed if it was successfully opened
+        if conn:
+            conn.close()
+    return users
 #POSTS
 def get_lost_posts():
     try:
