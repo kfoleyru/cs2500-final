@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost & Found Portal</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
+        header { background-color: #007bff; color: white; padding: 1em; text-align: center; }
+        nav { background-color: #333; padding: 0.5em; }
+        nav a { color: white; margin: 0 1em; text-decoration: none; padding: 0.5em 1em; }
+        nav a:hover { background-color: #555; border-radius: 4px; }
+        .container { width: 90%; max-width: 1200px; margin: 2em auto; }
+        .post-list { display: flex; flex-wrap: wrap; gap: 20px; }
+        .post-card { background-color: white; border: 1px solid #ddd; padding: 15px; border-radius: 8px; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); width: calc(50% - 20px); box-sizing: border-box; }
+        .post-card h3 { margin-top: 0; color: #007bff; }
+        .lost-card { border-left: 5px solid #dc3545; }
+        .found-card { border-left: 5px solid #28a745; }
+        .status-open { color: #dc3545; font-weight: bold; }
+        .status-available { color: #28a745; font-weight: bold; }
+        .status-matched, .status-closed, .status-returned { color: #ffc107; }
+        form { margin-top: 15px; }
+        .delete-btn { background: none; border: none; color: #dc3545; cursor: pointer; padding: 0; font-size: 0.9em; margin-left: 10px; }
+        .delete-btn:hover { text-decoration: underline; }
+        .post-form label, .post-form input, .post-form select, .post-form textarea { display: block; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
+        .post-form input[type="submit"] { width: auto; background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; }
+        .post-form input[type="submit"]:hover { background-color: #0056b3; }
+        .error { color: #dc3545; font-weight: bold; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Campus Lost & Found 🎒🔑</h1>
+    </header>
+    <nav>
+        <a href="/">Home (All Posts)</a>
+        <a href="/add-lost">Report Lost Item</a>
+        <a href="/add-found">Report Found Item</a>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

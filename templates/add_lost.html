@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <h2>Report a Lost Item 😭</h2>
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+    <form class="post-form" action="/add-lost" method="post">
+        <label for="item_name">Item Name:</label>
+        <input type="text" id="item_name" name="item_name" required>
+
+        <label for="category">Category:</label>
+        <select id="category" name="category" required>
+            <option value="">-- Select a Category --</option>
+            {% for cat in categories %}
+                <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="description">Description (Color, Brand, etc.):</label>
+        <textarea id="description" name="description" rows="3" required></textarea>
+
+        <label for="date_lost">Date Lost:</label>
+        <input type="date" id="date_lost" name="date_lost" required>
+
+        <label for="last_seen_location">Last Seen Location:</label>
+        <input type="text" id="last_seen_location" name="last_seen_location" required>
+
+        <input type="submit" value="Submit Lost Report">
+    </form>
+{% endblock %}
