@@ -97,7 +97,6 @@ async def login_form(request: Request):
     """Display login form"""
     return templates.TemplateResponse("login.html", {"request": request, "error": None})
 
-
 @app.post("/login", response_class=HTMLResponse)
 async def login_user(
         request: Request,
@@ -107,15 +106,24 @@ async def login_user(
     """Handle user login and set cookie"""
     user = verify_login(user_id_or_email, password)
 
-    if user:
-        response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
-        response.set_cookie(key="user_id", value=user['user_id'], httponly=True)
-        return response
-    else:
-        return templates.TemplateResponse(
-            "login.html",
-            {"request": request, "error": "Invalid User ID/Email or Password"}
-        )
+    if not user:
+        return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid User ID/Email or Password"})
+
+    # Normalize to a dict-like user object (ensure we have a canonical user record)
+    try:
+        # preferred: user is a mapping with 'user_id'
+        user_id = user['user_id']
+    except Exception:
+        # fallback: assume first element is user_id (tuple/sequence)
+        user_id = user[0]
+
+    full_user = get_user_by_id(user_id)
+    if not full_user:
+        return templates.TemplateResponse("login.html", {"request": request, "error": "User record not found after login"})
+
+    response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    response.set_cookie(key="user_id", value=full_user['user_id'], httponly=True)
+    return response
 
 
 @app.get("/logout", response_class=RedirectResponse)
@@ -430,3 +438,6 @@ async def error_page(request: Request, msg: Optional[str] = None, user_id: Optio
             **user_context
         }
     )
+
+
+#Once the server is running, go to http://127.0.0.1:8000/login and log in with any of the sample accounts, like User ID: 950000001 and Password: password123.

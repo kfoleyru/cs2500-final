@@ -1,7 +1,7 @@
 import sqlite3 as sql
 import hashlib
 
-DB = "lost_and_found.db"
+DB = "/Users/caleellingson/Documents/GitHub/cs2500-final/database/lost_and_found.db"
 
 
 def get_connection():
@@ -286,3 +286,5 @@ def admin_resolve_match(match_id: int) -> tuple[bool, str]:
         return False, f"Error resolving match: {e}"
     finally:
         conn.close()
+
+print("DONE this is db.py")
