@@ -19,9 +19,6 @@
                     <div class="post-card" style="border-left: 6px solid {% if match.resolved == 0 %}#ffc107{% else %}#28a745{% endif %};">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
                             <h3 style="margin: 0; color: #333;">Match ID: {{ match.match_id }}</h3>
-                            <span class="status-{{ 'resolved' if match.resolved else 'pending' }}" style="font-weight: bold; color: {% if match.resolved == 0 %}#ffc107{% else %}#28a745{% endif %};">
-                                Status: {{ 'Resolved' if match.resolved else 'Pending' }}
-                            </span>
                         </div>
 
                         <p><strong>Date Matched:</strong> {{ match.date_matched }}</p>
@@ -53,7 +50,7 @@
             </div>
         {% else %}
             <div style="text-align: center; padding: 40px 20px; color: #999; background-color: white; border-radius: 8px;">
-                <p style="font-size: 1.2em; margin-bottom: 10px;">No pending matches.</p>
+                <p style="font-size: 1.2em; margin-bottom: 10px;">No matches.</p>
                 {% if user_role == 'admin' %}
                     <p>All items have been matched and resolved!</p>
                 {% else %}

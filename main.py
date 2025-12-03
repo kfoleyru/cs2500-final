@@ -28,7 +28,6 @@ from database.db import (
 
 # --- FastAPI Setup ---
 app = FastAPI()
-# NOTE: You must create a 'static' directory if you have CSS/JS/images
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -48,7 +47,6 @@ def get_current_user(user_id: Optional[str] = None):
 
 
 # --- Authentication Routes ---
-
 @app.get("/register", response_class=HTMLResponse)
 async def register_form(request: Request):
     """Display registration form"""
@@ -439,5 +437,5 @@ async def error_page(request: Request, msg: Optional[str] = None, user_id: Optio
         }
     )
 
-
-#Once the server is running, go to http://127.0.0.1:8000/login and log in with any of the sample accounts, like User ID: 950000001 and Password: password123.
+# uvicorn main:app --reload
+# Once the server is running, go to http://127.0.0.1:8000/login and log in with any of the sample accounts, like User ID: 950000001 and Password: password123.
