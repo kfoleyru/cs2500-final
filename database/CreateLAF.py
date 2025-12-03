@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS Matches (
 )
 """)
 
-# INDEXES (for performance)
+
 cur.execute("CREATE INDEX IF NOT EXISTS idx_lost_category ON LostPosts(category)")
 cur.execute("CREATE INDEX IF NOT EXISTS idx_lost_status ON LostPosts(status)")
 cur.execute("CREATE INDEX IF NOT EXISTS idx_lost_date ON LostPosts(date_lost)")
@@ -94,7 +94,7 @@ cur.execute("CREATE INDEX IF NOT EXISTS idx_found_date ON FoundPosts(date_found)
 
 cur.execute("CREATE INDEX IF NOT EXISTS idx_match_resolved ON Matches(resolved)")
 
-# --- INSERT TEST USER (Admin: uadmin/password123) ---
+#(Admin: uadmin/password123) so i can hopefully log-in
 admin_password_hash = hash_password("password123")
 cur.execute("""
     INSERT INTO Users (user_id, name, email, password_hash, role)
@@ -105,4 +105,4 @@ cur.execute("""
 conn.commit()
 conn.close()
 
-print(f"Database schema created successfully in {DB} and 'uadmin' (password123) created.")
+print(f"Database schema created successfully in {DB} and 'uadmin' (password123) created. and this is in createLAF.py")

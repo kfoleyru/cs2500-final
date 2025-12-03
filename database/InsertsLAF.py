@@ -1,7 +1,6 @@
 # python
-# File: `database/InsertsLAF.py`
 import sqlite3
-from database.db import hash_password
+from database.db import hash_password #this is for the passcode
 
 # Connect to database
 conn = sqlite3.connect("lost_and_found.db")
@@ -18,7 +17,7 @@ cur.execute("DELETE FROM Users")
 conn.commit()
 print("Existing data cleared.\n")
 
-# INSERT 20 USERS (9-digit IDs starting with 95)
+# insert 20 users
 users_raw = [
     ("950000001", "Alice Johnson", "alice@college.edu", "555-1234", "password123", "student"),
     ("950000002", "Ben Carter", "ben@college.edu", "555-2345", "password123", "student"),
@@ -48,7 +47,7 @@ users = [
     for (user_id, name, email, phone, plain_pw, role) in users_raw
 ]
 
-# Insert users (explicit columns including password_hash)
+# Insert users adding the password
 for u in users:
     try:
         cur.execute(
@@ -59,7 +58,7 @@ for u in users:
         print(f"Skipping user {u[0]}: {e}")
 
 
-# INSERT 30 LOST POSTS
+# adding 30 lost posts from chatgpt
 lost_posts = [
     ("lost_001", "950000001", "MacBook Air", "Electronics", "Silver laptop in a black case", "2025-02-01", "Library 3rd floor", "open"),
     ("lost_002", "950000002", "Hoodie", "Clothing", "Gray Nike hoodie", "2025-01-28", "Gym locker room", "open"),
@@ -99,7 +98,7 @@ INSERT INTO LostPosts (lost_id, user_id, item_name, category, description,
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 """, lost_posts)
 
-# INSERT 22 FOUND POSTS
+# adding 22 found posts from chatgpt
 found_posts = [
     ("found_001", "950000003", "Laptop", "Electronics", "Silver laptop – Apple logo", "2025-02-02", "Library study room", "Campus Security Office", "available"),
     ("found_002", "950000001", "Nike Hoodie", "Clothing", "Gray hoodie, size L", "2025-01-29", "Gym bench", "Campus Security Office", "available"),
@@ -131,7 +130,7 @@ INSERT INTO FoundPosts (found_id, user_id, item_name, category, description,
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 """, found_posts)
 
-# INSERT MATCHES (let SQLite auto-generate match_id)
+# adding 4 matches
 matches = [
     ("lost_003", "found_003", "950000004", "ID matched successfully"),
     ("lost_007", "found_007", "950000003", "Owner contacted and verified"),
