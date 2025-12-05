@@ -32,6 +32,7 @@ def table_has_column(table: str, column: str) -> bool:
     conn.close()
     return column in cols
 
+# --- USERS/AUTH FUNCTIONS ---
 # making a user
 def add_user(user_id: str, name: str, email: str, password: str, phone: str = None, role: str = "student"):
     """
@@ -50,14 +51,14 @@ def add_user(user_id: str, name: str, email: str, password: str, phone: str = No
         else:
             return False, "Database schema missing password column (password or password_hash)."
 
-        #Execute the INSERT using the determined column name.
+        # ACTION: Execute the INSERT using the determined column name.
         cursor.execute(f"""
             INSERT INTO Users (user_id, name, email, {pw_col}, phone, role)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (user_id, name, email, password, phone, role))
         conn.commit()
         return True, "User successfully added."
-    #Catch integrity errors for duplicates
+    # ERROR HANDLING: Catch integrity errors for duplicates
     except sql.IntegrityError as e:
         msg = str(e)
         if "UNIQUE constraint failed: Users.email" in msg:
@@ -73,7 +74,7 @@ def add_user(user_id: str, name: str, email: str, password: str, phone: str = No
 
         #i need to make a verification now
 
-# What I need a flexible login check (ID or email) that handles either password column.
+# What I need: A flexible login check (ID or email) that handles either password column.
 def verify_login(user_id_or_email: str, password: str):
     """
     Verifies user login using user_id or email and plain text password.
@@ -91,7 +92,7 @@ def verify_login(user_id_or_email: str, password: str):
         return None
 
     user = dict(user_row)
-    # Check against the column that exists in the fetched row.
+    # LOGIC: Check against the column that exists in the fetched row.
     if 'password' in user:
         if password == user['password']:
             del user['password'] #delete apss
@@ -114,7 +115,7 @@ def get_user_by_id(user_id: str):
     conn.close()
     return dict(user_row) if user_row else None
 
-# Lost Item Management (CRUD)
+# FRAMEWORK STEP 3: Lost Item Management (CRUD)
 # What I need: List all posts, filtered by status, ordered by date.
 def get_lost_posts(status: str = 'open') -> list:
     conn = get_connection()
@@ -157,7 +158,7 @@ def add_lost_post(lost_id: str, user_id: str, item_name: str, category: str, des
     finally:
         conn.close()
 
-# deletion post logic.
+# What I need: Deletion logic.
 def delete_lost_post(lost_id: str):
     conn = get_connection()
     cur = conn.cursor()
@@ -168,7 +169,7 @@ def delete_lost_post(lost_id: str):
         conn.close()
 
 # FOUND POST CRUD
-# Found Item Management this is lowkey just the lost post one
+# FRAMEWORK STEP 4: Found Item Management this is lowkey just the lost post one
 # What I need: List all posts, using 'available' status as the default.
 def get_found_posts(status: str = 'available') -> list:
     conn = get_connection()
@@ -318,7 +319,7 @@ def admin_resolve_match(match_id: int) -> tuple[bool, str]:
             return False, "Match is already resolved."
         lost_id, found_id = match['lost_id'], match['found_id']
 
-        # Update all 3 tables {Matches, LostPosts, FoundPosts once we know its valid}
+        # Update all 3 tables: Matches, LostPosts, FoundPosts once we know its valid
         cur.execute("UPDATE Matches SET resolved = 1, notes = ? WHERE match_id = ?",
                     ("Match successfully resolved by admin. Item returned.", match_id))
         cur.execute("UPDATE LostPosts SET status = 'closed' WHERE lost_id = ?", (lost_id,))
