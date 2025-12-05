@@ -32,7 +32,7 @@ def table_has_column(table: str, column: str) -> bool:
     conn.close()
     return column in cols
 
-# --- USERS/AUTH FUNCTIONS ---
+
 # making a user
 def add_user(user_id: str, name: str, email: str, password: str, phone: str = None, role: str = "student"):
     """
@@ -169,7 +169,7 @@ def delete_lost_post(lost_id: str):
         conn.close()
 
 # FOUND POST CRUD
-# FRAMEWORK STEP 4: Found Item Management this is lowkey just the lost post one
+# found Item Management this is lowkey just the lost post one
 # What I need: List all posts, using 'available' status as the default.
 def get_found_posts(status: str = 'available') -> list:
     conn = get_connection()
@@ -214,7 +214,7 @@ def delete_found_post(found_id: str):
 # What i still need to do is the matching function look at the social media and perhaps find something online thats like this
 
 # MATCHING FUNCTIONS
-# FRAMEWORK STEP 5: Matching and Transaction Logic (admin special priv perhaps)
+# Matching and Transaction Logic (admin special priv perhaps)
 # What I need: Admin view - all matches that haven't been resolved (resolved = 0). i need to join the tables and then
 # check for the resolved status perhaps change the 0's to 1's
 def get_all_unresolved_matches() -> list:
