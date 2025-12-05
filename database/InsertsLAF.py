@@ -66,7 +66,7 @@ def main():
         except sqlite3.IntegrityError as e:
             print(f"Skipping user {u[0]}: {e}")
 
-    # Minimal sample lost/found posts (extend as needed)
+    # Minimal sample lost/found posts
     lost_posts = [
         ("lost_001", "950000001", "MacBook Air", "Electronics", "Silver laptop in a black case", "2025-02-01", "Library 3rd floor", "open"),
         ("lost_002", "950000002", "Hoodie", "Clothing", "Gray Nike hoodie", "2025-01-28", "Gym locker room", "open"),
